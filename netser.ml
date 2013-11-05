@@ -9,6 +9,24 @@ let parse s =
     let s = Lexing.from_string s in
     Netser_parser.parse_sexpr (Netser_lexer.tokens) s
 
+
+let normalize l =
+    (* converts (a b c (def) (ghi jkl) m n o) to
+                ((a b c) (def) (ghi jkl) (m n o))     *)
+
+    (* if see cons, create new product type, otherwise accum *)
+    let acc = ref [] in
+    let append x =
+        if [] <> x then acc := (Cons (List.rev x)) :: !acc in
+    let rec doit accum = function
+    | (Cons q)::t ->
+        append accum;
+        ignore(doit [] q);
+        doit [] t
+    | h::t -> doit (h::accum) t
+    | [] -> append accum; List.rev !acc in
+    doit [] l
+
 let rec innerpt2ast s =
     let is_product l =
         let is_cons = function
@@ -18,7 +36,7 @@ let rec innerpt2ast s =
     match s with
     | Cons (h::[]) -> innerpt2ast h
     | Cons l when is_product l -> Ast_product (List.map innerpt2ast l)
-    | Cons l -> Ast_sum (List.map innerpt2ast l)
+    | Cons l -> Ast_sum (List.map innerpt2ast (normalize l))
     | Int_literal i ->
         Ast_elem (Ast_literal ((Ast_int_literal i), (Prim PRIM_INT)))
     | Ident s -> Ast_elem (Ast_ident (None, s))
