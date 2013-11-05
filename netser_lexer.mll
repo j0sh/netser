@@ -1,5 +1,6 @@
 {
     open Netser_parser
+    open Netser_types
 }
 
 let upper = ['A'-'Z']
@@ -14,6 +15,9 @@ rule tokens = parse
     | '('           { LPAREN }
     | ')'           { RPAREN }
     | '|'           { PIPE }
+    | ':'           { COLON }
+    | "uint8" | "int32" | "uint16" | "int" | "float" | "char"
+        as typ { PRIM (str2prim typ) }
     | ident as s    { IDENT s }
     | numeric as n  { NUM (int_of_string n) }
     | blank+        { tokens lexbuf }

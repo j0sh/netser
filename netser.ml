@@ -1,8 +1,18 @@
 open Netser_types
 
-let rec print_sexpr = function
-      Ident s -> Printf.sprintf "%s" s
-    | Int_literal i -> Printf.sprintf "%d" i
+let rec print_sexpr sexpr =
+    let p_t t =
+        match t with
+        | Prim p -> prim2str p
+        | Identifier s -> s in
+    let p_l = function
+        | Ast_int_literal i -> string_of_int i in
+    let print_elem = function
+        | Ast_literal (v, t) -> Printf.sprintf "%s:%s" (p_t t) (p_l v)
+        | Ast_ident (Some s, t) -> Printf.sprintf "%s:%s" (p_t t) s
+        | Ast_ident (None, t) -> Printf.sprintf "%s" (p_t t) in
+    match sexpr with
+    | Elem s -> print_elem s
     | Cons l -> Printf.sprintf "(%s)" (String.concat " " ((List.map print_sexpr l)))
 
 let parse s =
@@ -37,17 +47,15 @@ let rec innerpt2ast s =
     | Cons (h::[]) -> innerpt2ast h
     | Cons l when is_product l -> Ast_product (List.map innerpt2ast l)
     | Cons l -> Ast_sum (List.map innerpt2ast (normalize l))
-    | Int_literal i ->
-        Ast_elem (Ast_literal ((Ast_int_literal i), (Prim PRIM_INT)))
-    | Ident s -> Ast_elem (Ast_ident (None, s))
+    | Elem e -> Ast_elem e
 
 (* convert parsetree to ast *)
 let pt2ast s : Netser_types.ast_name =
     let is_ident = function
-        | Ident s -> true
+        | Elem (Ast_ident (_, _)) -> true
         | _ -> false in
     let get_ident = function
-        | Ident s -> s
+        | Elem (Ast_ident (None, (Identifier s))) -> s
         | _ -> raise (Failure "Could not get ident; syntax error") in
     match s with
     | Cons (h::t) when is_ident h ->
