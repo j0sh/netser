@@ -1,19 +1,27 @@
 open Netser_types
 
-let rec print_sexpr sexpr =
+let print_elem e =
     let p_t t =
         match t with
         | Prim p -> prim2str p
         | Identifier s -> s in
     let p_l = function
         | Ast_int_literal i -> string_of_int i in
-    let print_elem = function
+    match e with
         | Ast_literal (v, t) -> Printf.sprintf "%s:%s" (p_t t) (p_l v)
         | Ast_ident (Some s, t) -> Printf.sprintf "%s:%s" (p_t t) s
-        | Ast_ident (None, t) -> Printf.sprintf "%s" (p_t t) in
-    match sexpr with
+        | Ast_ident (None, t) -> Printf.sprintf "%s" (p_t t)
+
+let rec print_sexpr = function
     | Elem s -> print_elem s
     | Cons l -> Printf.sprintf "(%s)" (String.concat " " ((List.map print_sexpr l)))
+
+let ast2sexp = function (name, ast_tree) ->
+    let rec inner = function
+    | Ast_elem s -> print_elem s
+    | Ast_product l -> Printf.sprintf "(%s)" (String.concat " " (List.map inner l))
+    | Ast_sum l -> String.concat " | " (List.map inner l) in
+    Printf.sprintf "(%s %s)" name (inner ast_tree)
 
 let parse s =
     let s = Lexing.from_string s in
