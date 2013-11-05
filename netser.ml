@@ -62,7 +62,26 @@ let pt2ast s : Netser_types.ast_name =
         (get_ident h), innerpt2ast (Cons t)
     | _ -> raise (Failure "Declaration mising a named identifier")
 
+(* routine to convert Ast_ident (None, t)  into Ast_ident (Some <string>, t) *)
+(* so we can have a name when deconstructing for writing *)
+let fixup_elems = function (name, tree) ->
+    let count = ref (-1) in
+    let mklabel () = incr count; Printf.sprintf "%s%d" name !count in
+    let rec elem = function
+        | Ast_elem (Ast_ident (None, t)) -> Ast_elem (Ast_ident (Some (mklabel ()), t))
+        | Ast_product l -> Ast_product (List.map elem l)
+        | Ast_sum l -> Ast_sum (List.map elem l)
+        | q -> q in
+    (name, elem tree)
+
+let desugar s =
+    let q = normalize (parse s) in
+    let strings = List.map print_sexpr q in
+    let str = String.concat " " strings in
+    Printf.printf "%s\n" str
 
 let initialize s =
     let parsetree = parse s in
-    List.map pt2ast parsetree
+    let stuff x = fixup_elems (pt2ast x) in
+    let ast = List.map stuff parsetree in
+    ast
