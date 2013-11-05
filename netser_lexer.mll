@@ -13,6 +13,7 @@ let ident = lower (lower | upper | digit | '_')*
 rule tokens = parse
     | '('           { LPAREN }
     | ')'           { RPAREN }
+    | '|'           { PIPE }
     | ident as s    { IDENT s }
     | numeric as n  { NUM (int_of_string n) }
     | blank+        { tokens lexbuf }

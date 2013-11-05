@@ -2,7 +2,7 @@
     open Netser_types
 %}
 
-%token EOF RPAREN LPAREN
+%token EOF PIPE RPAREN LPAREN
 %token <int> NUM
 %token <string> IDENT
 
@@ -14,5 +14,6 @@
 parse_sexpr: sexpr* EOF { $1 }
 sexpr:
     | LPAREN sexpr* RPAREN { Cons $2 }
+    | PIPE { Cons [] }
     | IDENT { Ident $1 }
     | NUM { Int_literal $1 }
