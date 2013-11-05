@@ -7,11 +7,11 @@
 %token <string> IDENT
 
 %start parse_sexpr
-%type <Netser_types.t> parse_sexpr
+%type <Netser_types.t list> parse_sexpr
 
 %%
 
-parse_sexpr: sexpr EOF { $1 }
+parse_sexpr: sexpr* EOF { $1 }
 sexpr:
     | LPAREN sexpr* RPAREN { Cons $2 }
     | IDENT { Ident $1 }
