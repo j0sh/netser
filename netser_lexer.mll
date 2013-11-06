@@ -14,6 +14,8 @@ let ident = lower (lower | upper | digit | '_')*
 rule tokens = parse
     | '('           { LPAREN }
     | ')'           { RPAREN }
+    | '['           { LBRACK }
+    | ']'           { RBRACK }
     | '|'           { PIPE }
     | ':'           { COLON }
     | "uint8" | "int32" | "uint16" | "int" | "float" | "char"

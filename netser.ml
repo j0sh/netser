@@ -9,10 +9,14 @@ let print_elem e =
         | Identifier s -> s in
     let p_l = function
         | Ast_int_literal i -> string_of_int i in
+    let p_c = function
+        | Count_literal i when i = 1 -> ""
+        | Count_literal i -> Printf.sprintf "[%d]" i
+        | Count_ident s -> Printf.sprintf "[%s]" s in
     match e with
         | Ast_literal (v, t) -> Printf.sprintf "%s:%s" (p_t t) (p_l v)
-        | Ast_ident (Some s, t) -> Printf.sprintf "%s:%s" (p_t t) s
-        | Ast_ident (None, t) -> Printf.sprintf "%s" (p_t t)
+        | Ast_ident (Some s, t, c) -> Printf.sprintf "%s%s:%s" (p_t t) (p_c c) s
+        | Ast_ident (None, t, c) -> Printf.sprintf "%s%s" (p_t t) (p_c c)
 
 let rec print_sexpr = function
     | Elem s -> print_elem s
@@ -31,7 +35,7 @@ let parse s =
 
 
 let rec tree_deps = function
-    | Ast_elem (Ast_ident(_, Identifier s)) -> [s]
+    | Ast_elem (Ast_ident(_, Identifier s, _)) -> [s]
     | Ast_product l -> List.flatten (List.map tree_deps l)
     | Ast_sum l -> List.flatten (List.map tree_deps l)
     | _ -> []
@@ -123,10 +127,10 @@ let rec innerpt2ast s =
 (* convert parsetree to ast *)
 let pt2ast s : Netser_types.ast_name =
     let is_ident = function
-        | Elem (Ast_ident (_, _)) -> true
+        | Elem (Ast_ident _) -> true
         | _ -> false in
     let get_ident = function
-        | Elem (Ast_ident (None, (Identifier s))) -> s
+        | Elem (Ast_ident (None, (Identifier s), _)) -> s
         | _ -> raise (Failure "Could not get ident; syntax error") in
     match s with
     | Cons (h::t) when is_ident h ->
@@ -139,7 +143,7 @@ let fixup_elems = function (name, tree) ->
     let count = ref (-1) in
     let mklabel () = incr count; Printf.sprintf "%s%d" name !count in
     let rec elem = function
-        | Ast_elem (Ast_ident (None, t)) -> Ast_elem (Ast_ident (Some (mklabel ()), t))
+        | Ast_elem (Ast_ident (None, t, c)) -> Ast_elem (Ast_ident (Some (mklabel ()), t, c))
         | Ast_product l -> Ast_product (List.map elem l)
         | Ast_sum l -> Ast_sum (List.map elem l)
         | q -> q in

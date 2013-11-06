@@ -2,7 +2,8 @@ type prim_t = PRIM_UINT8 | PRIM_UINT16 | PRIM_INT32 | PRIM_INT | PRIM_FLOAT | PR
 
 type ast_type = Prim of prim_t | Identifier of string
 type ast_literal = Ast_int_literal of int
-type ast_elem = Ast_literal of ast_literal * ast_type | Ast_ident of string option * ast_type
+type ast_count = Count_literal of int | Count_ident of string
+type ast_elem = Ast_literal of ast_literal * ast_type | Ast_ident of string option * ast_type * ast_count
 type ast = Ast_elem of ast_elem | Ast_product of ast list | Ast_sum of ast list
 type ast_name = string * ast
 
