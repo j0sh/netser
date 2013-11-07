@@ -18,6 +18,7 @@ rule tokens = parse
     | ']'           { RBRACK }
     | '|'           { PIPE }
     | ':'           { COLON }
+    | '#'           { POUND }
     | "uint8" | "int32" | "uint16" | "int" | "float" | "char"
         as typ { PRIM (str2prim typ) }
     | ident as s    { IDENT s }

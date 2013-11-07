@@ -16,7 +16,7 @@
     | (h::t) as l -> Ast_product (List.map (fun x -> Ast_elem x) l)
 %}
 
-%token EOF COLON PIPE RPAREN LPAREN LBRACK RBRACK
+%token EOF POUND COLON PIPE RPAREN LPAREN LBRACK RBRACK
 %token <int> NUM
 %token <string> IDENT
 %token <Netser_types.prim_t> PRIM
@@ -35,6 +35,7 @@ te: typexpr* { simplify_typexpr $1 }
 expr:
     | te { $1 }
     | te PIPE expr { Ast_sum ($1::[$3]) }
+    | type_kind POUND LPAREN expr RPAREN { Ast_pound ($1, $4) }
 
 type_kind: IDENT { Identifier $1} | PRIM { Prim $1 }
 index: IDENT { Count_ident $1 } | NUM { Count_literal $1 }

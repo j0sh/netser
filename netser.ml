@@ -2,11 +2,11 @@ open Netser_types
 
 module SS = Set.Make(String)
 
+let p_t = function
+    | Prim p -> prim2str p
+    | Identifier s -> s
+
 let print_elem e =
-    let p_t t =
-        match t with
-        | Prim p -> prim2str p
-        | Identifier s -> s in
     let p_l = function
         | Ast_int_literal i -> string_of_int i in
     let p_c = function
@@ -22,7 +22,8 @@ let ast2sexp = function (name, ast_tree) ->
     let rec inner = function
     | Ast_elem s -> print_elem s
     | Ast_product l -> Printf.sprintf "(%s)" (String.concat " " (List.map inner l))
-    | Ast_sum l -> String.concat " | " (List.map inner l) in
+    | Ast_sum l -> String.concat " | " (List.map inner l)
+    | Ast_pound (t, e) -> Printf.sprintf "%s#(%s)" (p_t t) (inner e) in
     Printf.sprintf "(%s %s)" name (inner ast_tree)
 
 let parse s =
