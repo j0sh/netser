@@ -95,6 +95,48 @@ let dep_order l =
     done;
     List.rev !order
 
+let find_cycles trees =
+    (* create hashmap of name -> edges *)
+    let out : (string, string list) Hashtbl.t = Hashtbl.create 100 in
+    let edges = outgoing_edges trees in
+    List.iter2 (fun (name, _) e -> Hashtbl.add out name e) trees edges;
+
+    let add s value = s := SS.add value !s in
+    let remove s value = s := SS.remove value !s in
+    let contains s value = SS.exists (fun x -> x = value) !s in
+
+    let unvisited = ref SS.empty in
+    let cycles = ref [] in
+
+    let rec inner l =
+        let check_neighbor x =
+            (* check cycle by looking for an existing x in list *)
+            if [] <> List.filter (fun y -> x = y) l then begin
+                let found = ref false in
+                (* list could be 1 2 3 4 1 5 6; trim to 1 2 3 4 *)
+                let trim_list accum y  =
+                    let a = if not !found then y::accum else accum in
+                    if not !found then found := y = x;
+                    a in
+                let cycle = List.fold_left trim_list [] l in
+                cycles := cycle :: !cycles;
+            end in
+        let x = List.hd l in
+        remove unvisited x;
+        let neighbors = Hashtbl.find out x in
+        List.iter check_neighbor neighbors;
+        (* now recurse to unvisited nodes *)
+        let is_unvisited = contains unvisited in
+        let neighbors = List.filter is_unvisited neighbors in
+        List.iter (fun n -> inner (n::l)) neighbors in
+
+    List.iter (fun (name, _) -> add unvisited name) trees;
+    while not (SS.is_empty !unvisited) do
+        let name = SS.choose !unvisited in
+        inner [name];
+    done;
+    !cycles
+
 let normalize l =
     (* converts (a b c (def) (ghi jkl) m n o) to
                 ((a b c) (def) (ghi jkl) (m n o))     *)
