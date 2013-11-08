@@ -18,15 +18,19 @@
 %token <Netser_types.prim_t> PRIM
 
 %start parse_sexpr
-%type <Netser_types.sexp_t list> parse_sexpr
+%type <Netser_types.ast_name list> parse_sexpr
 
 %%
 
-parse_sexpr: sexpr* EOF { $1 }
-sexpr:
-    | LPAREN sexpr* RPAREN { Cons $2 }
-    | typexpr { Elem $1 }
-    | PIPE { Cons [] }
+parse_sexpr: ast* EOF { $1 }
+ast:
+    | LPAREN IDENT expr RPAREN { ($2, $3) }
+
+te: typexpr* { Ast_product (List.map (fun x -> Ast_elem x) $1) }
+
+expr:
+    | te { $1 }
+    | te PIPE expr { Ast_sum ($1::[$3]) }
 
 type_kind: IDENT { Identifier $1} | PRIM { Prim $1 }
 index: IDENT { Count_ident $1 } | NUM { Count_literal $1 }
