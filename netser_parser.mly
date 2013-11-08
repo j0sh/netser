@@ -10,6 +10,10 @@
         if x < 256 then Prim PRIM_UINT8
         else if x < 65536 then Prim PRIM_UINT16
         else Prim PRIM_INT
+    let simplify_typexpr = function
+    | h::[] -> Ast_elem h
+    | [] -> Ast_product []
+    | (h::t) as l -> Ast_product (List.map (fun x -> Ast_elem x) l)
 %}
 
 %token EOF COLON PIPE RPAREN LPAREN LBRACK RBRACK
@@ -26,7 +30,7 @@ parse_sexpr: ast* EOF { $1 }
 ast:
     | LPAREN IDENT expr RPAREN { ($2, $3) }
 
-te: typexpr* { Ast_product (List.map (fun x -> Ast_elem x) $1) }
+te: typexpr* { simplify_typexpr $1 }
 
 expr:
     | te { $1 }
