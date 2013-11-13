@@ -16,9 +16,13 @@ rule tokens = parse
     | ')'           { RPAREN }
     | '['           { LBRACK }
     | ']'           { RBRACK }
+    | '{'           { LCURL }
+    | '}'           { RCURL }
     | '|'           { PIPE }
     | ':'           { COLON }
     | '#'           { POUND }
+    | '='           { EQUAL }
+    | "type"        { TYPE }
     | "uint8" | "int32" | "uint16" | "int" | "float" | "char"
         as typ { PRIM (str2prim typ) }
     | ident as s    { IDENT s }

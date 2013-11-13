@@ -16,7 +16,7 @@
     | (h::t) as l -> Ast_product (List.map (fun x -> Ast_elem x) l)
 %}
 
-%token EOF POUND COLON PIPE RPAREN LPAREN LBRACK RBRACK
+%token EOF TYPE EQUAL POUND COLON PIPE RPAREN LPAREN LBRACK RBRACK LCURL RCURL
 %token <int> NUM
 %token <string> IDENT
 %token <Netser_types.prim_t> PRIM
@@ -28,7 +28,7 @@
 
 parse_sexpr: ast* EOF { $1 }
 ast:
-    | LPAREN IDENT expr RPAREN { ($2, $3) }
+    | TYPE IDENT EQUAL LCURL expr RCURL { ($2, $5) }
 
 te: typexpr* { simplify_typexpr $1 }
 
