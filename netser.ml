@@ -178,6 +178,20 @@ let edge_table f trees =
     List.iter2 (Hashtbl.add out) names s;
     out
 
+let reorder_types order types =
+    let tbl : (string, int) Hashtbl.t = Hashtbl.create 100 in
+    let len = List.length order in
+    let make_blan i name =
+        let parts = Str.split (Str.regexp "/") name in
+        List.iter (fun x -> Hashtbl.add tbl x i) parts in
+    List.iteri make_blan order;
+    let arr = Array.make len [] in
+    let populate_arr (name, data) =
+        let i = Hashtbl.find tbl name in
+        arr.(i) <- (name, data) :: arr.(i) in
+    List.iter populate_arr types;
+    Array.to_list arr
+
 let type_order trees =
     let incoming = edge_table incoming_edges trees in
     let outgoing = edge_table outgoing_edges trees in
@@ -192,7 +206,8 @@ let type_order trees =
     (* too lazy to refactor dep_order to consider cyclic lists,
        so we consolidate each cycle into one key *)
     SL.iter (cycle2table outgoing incoming) unified_cycles;
-    dep_order outgoing
+    let order = dep_order outgoing in
+    reorder_types order trees
 
 let concat_sums = function (name, e) -> (name, inner_concat_sums e)
 
