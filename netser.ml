@@ -143,6 +143,57 @@ and inner_concat_sums2 accum = function
     | Ast_product l -> (Ast_product (List.map inner_concat_sums l)) :: accum
     | e -> e::accum
 
+let cycle2table outgoing incoming cycle_set =
+    (* convert elements in cycle to a single edge-table entry *)
+    (* replace outgoing edges *)
+    let cycle = SS.elements cycle_set in
+    let cycle_name = String.concat "/" cycle in
+    let neighbor_sets = List.map (Hashtbl.find outgoing) cycle in
+    let cycle_deps = List.fold_left SS.union SS.empty neighbor_sets in
+    (* add cyclename, but exclude cycle's own elements from edges *)
+    Hashtbl.add outgoing cycle_name (SS.diff cycle_deps cycle_set);
+    List.iter (Hashtbl.remove outgoing) cycle;
+    (* fixup other edges to point to cyclename instead of elements *)
+    let inedges = List.map (Hashtbl.find incoming) cycle in
+    let incoming_set = List.fold_left SS.union SS.empty inedges in
+    let replace x =
+        try
+            let node_outedges = Hashtbl.find outgoing x in
+            let exists = SS.inter node_outedges cycle_set in
+            let res = if not (SS.is_empty exists) then
+                (* remove existing set from table; add cyclename *)
+                let r = List.fold_right SS.remove (SS.elements exists) node_outedges in
+                SS.add cycle_name r
+            else node_outedges in
+            Hashtbl.replace outgoing x res
+        with exn -> () in (* x already been replaced; do nothing *)
+    SS.iter replace incoming_set
+
+let edge_table f trees =
+    let out : (string, SS.t) Hashtbl.t = Hashtbl.create 100 in
+    let edges = f trees in
+    let names = List.map (fun (name, _) -> name) trees in
+    let list2set l = List.fold_right SS.add l SS.empty in
+    let s = List.map list2set edges in
+    List.iter2 (Hashtbl.add out) names s;
+    out
+
+let type_order trees =
+    let incoming = edge_table incoming_edges trees in
+    let outgoing = edge_table outgoing_edges trees in
+    let names = List.map (fun (name, _) -> [name]) trees in
+    let cycles = find_cycles outgoing in
+    (* merge type names and cycle lists into a set-of-string-sets *)
+    let sslist = names@cycles in
+    let add x = List.fold_right SS.add x SS.empty in
+    let ss = List.map add sslist in
+    let sl = List.fold_right SL.add ss SL.empty in
+    let unified_cycles = join_cycles sl in
+    (* too lazy to refactor dep_order to consider cyclic lists,
+       so we consolidate each cycle into one key *)
+    SL.iter (cycle2table outgoing incoming) unified_cycles;
+    dep_order outgoing
+
 let concat_sums = function (name, e) -> (name, inner_concat_sums e)
 
 (* routine to convert Ast_ident (None, t)  into Ast_ident (Some <string>, t) *)
