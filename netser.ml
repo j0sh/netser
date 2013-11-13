@@ -47,9 +47,10 @@ let fixup_elems = function (name, tree) ->
     let mklabel () = incr count; Printf.sprintf "%s%d" name !count in
     let rec elem = function
         | Ast_elem (Ast_ident (None, t, c)) -> Ast_elem (Ast_ident (Some (mklabel ()), t, c))
+        | Ast_elem _ as s -> s
         | Ast_product l -> Ast_product (List.map elem l)
         | Ast_sum l -> Ast_sum (List.map elem l)
-        | q -> q in
+        | Ast_pound (typ, e) -> Ast_pound (typ, elem e) in
     (name, elem tree)
 
 let prim2type = function
