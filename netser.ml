@@ -52,8 +52,59 @@ let fixup_elems = function (name, tree) ->
         | q -> q in
     (name, elem tree)
 
+let prim2type = function
+    | PRIM_UINT8 | PRIM_UINT16 | PRIM_INT  -> "int"
+    | PRIM_INT32 -> "int32"
+    | PRIM_FLOAT -> "float"
+    | PRIM_CHAR -> "char"
+
+let id2type s = s^"_t"
+
+let ident_type = function
+    | (None, _, _) -> raise (Failure "Empty ident; fixup?")
+    | (_, Prim p, Count_literal 1) -> prim2type p
+    | (_, Prim p, _) -> (prim2type p) ^ " list"
+    | (_, Identifier s, Count_literal 1) -> id2type s
+    | (_, Identifier s, _) -> (id2type s) ^ " list"
+
+let elem_type = function
+    | Ast_literal (_, _) -> ""
+    | Ast_ident (a, b, c) -> ident_type (a, b, c)
+
+let upcase str =
+    let s = String.copy str in
+    s.[0] <- Char.uppercase s.[0];
+    s
+
+let nonempty = List.filter (fun x -> x <> "")
+
+let rec data_type name = function
+    | Ast_elem e -> elem_type e
+    | Ast_product p -> String.concat " * " (nonempty (List.map (data_type name) p))
+    | Ast_sum s -> String.concat " | " (sum_type name s)
+    | Ast_pound (_, e) -> data_type name e
+
+and sum_type name l =
+    let cap = upcase name in
+    let ne = nonempty (List.map (data_type name) l) in
+    List.mapi (fun i x -> Printf.sprintf "%s%d of %s" cap i x) ne
+
+let print_type types =
+    let pn s = (id2type s)^" = " in
+    let gen_types l =
+        let get_type name data =
+            let typed_s = data_type name data in
+            if "" = typed_s then upcase name else typed_s in
+        let gen_type (name, data) = (pn name)^(get_type name data) in
+        let m = List.map gen_type l in
+        let str = String.concat "\nand " m in
+        "type "^str in
+    let strs = List.map gen_types types in
+    String.concat "\n\n" strs
+
 let initialize s =
     let parsetree = parse s in
     let stuff x = fixup_elems (concat_sums x) in
     let ast = List.map stuff parsetree in
-    ast
+    let order = Netser_ordering.type_order ast in
+    print_type order
