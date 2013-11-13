@@ -56,12 +56,7 @@ let incoming_edges l =
     List.iter2 add2in l outgoings;
     List.map in2list l
 
-let dep_order l =
-    (* create hashmap of name -> edges *)
-    let out : (string, string list) Hashtbl.t = Hashtbl.create 100 in
-    let edges = outgoing_edges l in
-    List.iter2 (fun (name, _) e -> Hashtbl.add out name e) l edges;
-
+let dep_order edges =
     let add s value = s := SS.add value !s in
     let remove s value = s := SS.remove value !s in
     let contains s value = SS.exists (fun x -> x = value) !s in
@@ -72,14 +67,14 @@ let dep_order l =
     let order = ref [] in
 
     (* topological sort *)
-    List.iter (fun (name, _) -> (add unmarked name)) l;
+    Hashtbl.iter (fun name _ -> add unmarked name) edges;
     let rec visit name =
         if contains temp name then raise (Failure "Not a DAG");
         if not (contains marked name) then begin
             try
-                let n_edges = Hashtbl.find out name in
+                let n_edges = Hashtbl.find edges name in
                 add temp name;
-                List.iter visit n_edges;
+                SS.iter visit n_edges;
                 remove temp name;
                 add marked name;
                 order := name :: !order
@@ -92,12 +87,7 @@ let dep_order l =
     done;
     List.rev !order
 
-let find_cycles trees =
-    (* create hashmap of name -> edges *)
-    let out : (string, string list) Hashtbl.t = Hashtbl.create 100 in
-    let edges = outgoing_edges trees in
-    List.iter2 (fun (name, _) e -> Hashtbl.add out name e) trees edges;
-
+let find_cycles edges =
     let add s value = s := SS.add value !s in
     let remove s value = s := SS.remove value !s in
     let contains s value = SS.exists (fun x -> x = value) !s in
@@ -105,6 +95,7 @@ let find_cycles trees =
     let unvisited = ref SS.empty in
     let cycles = ref [] in
 
+    Hashtbl.iter (fun name _ -> add unvisited name) edges;
     let rec inner l =
         let check_neighbor x =
             (* check cycle by looking for an existing x in list *)
@@ -120,14 +111,13 @@ let find_cycles trees =
             end in
         let x = List.hd l in
         remove unvisited x;
-        let neighbors = Hashtbl.find out x in
-        List.iter check_neighbor neighbors;
+        let neighbors = Hashtbl.find edges x in
+        SS.iter check_neighbor neighbors;
         (* now recurse to unvisited nodes *)
         let is_unvisited = contains unvisited in
-        let neighbors = List.filter is_unvisited neighbors in
-        List.iter (fun n -> inner (n::l)) neighbors in
+        let neighbors = SS.filter is_unvisited neighbors in
+        SS.iter (fun n -> inner (n::l)) neighbors in
 
-    List.iter (fun (name, _) -> add unvisited name) trees;
     while not (SS.is_empty !unvisited) do
         let name = SS.choose !unvisited in
         inner [name];
