@@ -32,10 +32,12 @@ let parse s =
 let rec inner_concat_sums = function
     | Ast_product l -> Ast_product (List.map inner_concat_sums l)
     | Ast_sum l -> Ast_sum (List.map inner_concat_sums (List.fold_left inner_concat_sums2 [] l))
+    | Ast_pound (t, e) -> Ast_pound (t, inner_concat_sums e)
     | e -> e
 and inner_concat_sums2 accum = function
     | Ast_sum l -> List.fold_left inner_concat_sums2 accum l
     | Ast_product l -> (Ast_product (List.map inner_concat_sums l)) :: accum
+    | Ast_pound (t, e) -> Ast_pound (t, inner_concat_sums e)::accum
     | e -> e::accum
 
 let concat_sums = function (name, e) -> (name, inner_concat_sums e)
