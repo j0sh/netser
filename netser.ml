@@ -1,6 +1,7 @@
 open Netser_types
 
 module SS = Set.Make(String)
+module SL = Set.Make(SS)
 
 let p_t = function
     | Prim p -> prim2str p
@@ -123,6 +124,14 @@ let find_cycles edges =
         inner [name];
     done;
     !cycles
+
+let rec join_cycles (sl:SL.t) =
+     let each (sl:SL.t) (s:SS.t) =
+        let cmp (x:SS.t) (accum:SS.t) = if (SS.inter x accum) = SS.empty then accum else SS.union x accum in
+        List.fold_right cmp (SL.elements sl) s in
+    let sl_unified_elems = List.map (each sl) (SL.elements sl) in
+    let c = List.fold_right SL.add sl_unified_elems SL.empty in
+    if not (SL.equal sl c) then join_cycles c else c
 
 (* successive sums will be nested after the parse; convert to list *)
 let rec inner_concat_sums = function
