@@ -89,8 +89,12 @@ let rec data_type name = function
 
 and sum_type name l =
     let cap = upcase name in
-    let ne = nonempty (List.map (data_type name) l) in
-    List.mapi (fun i x -> Printf.sprintf "%s%d of %s" cap i x) ne
+    let ne = List.map (data_type name) l in
+    let gen_ctr i x =
+        (* don't append 'of ...' for empty types *)
+        let str = Printf.sprintf "%s%d" cap i in
+        if "" <> x then Printf.sprintf "%s of %s" str x else str in
+    List.mapi gen_ctr ne
 
 let print_type types =
     let pn s = (id2type s)^" = " in
