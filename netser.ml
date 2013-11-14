@@ -28,20 +28,6 @@ let parse s =
     let s = Lexing.from_string s in
     Netser_parser.parse_sexpr (Netser_lexer.tokens) s
 
-(* successive sums will be nested after the parse; convert to list *)
-let rec inner_concat_sums = function
-    | Ast_product l -> Ast_product (List.map inner_concat_sums l)
-    | Ast_sum l -> Ast_sum (List.map inner_concat_sums (List.fold_left inner_concat_sums2 [] l))
-    | Ast_pound (t, e) -> Ast_pound (t, inner_concat_sums e)
-    | e -> e
-and inner_concat_sums2 accum = function
-    | Ast_sum l -> List.fold_left inner_concat_sums2 accum l
-    | Ast_product l -> (Ast_product (List.map inner_concat_sums l)) :: accum
-    | Ast_pound (t, e) -> Ast_pound (t, inner_concat_sums e)::accum
-    | e -> e::accum
-
-let concat_sums = function (name, e) -> (name, inner_concat_sums e)
-
 (* routine to convert Ast_ident (None, t)  into Ast_ident (Some <string>, t) *)
 (* so we can have a name when deconstructing for writing *)
 let fixup_elems = function (name, tree) ->
@@ -111,7 +97,7 @@ let print_type types =
 
 let initialize s =
     let parsetree = parse s in
-    let stuff x = fixup_elems (concat_sums x) in
+    let stuff x = fixup_elems x in
     let ast = List.map stuff parsetree in
     let order = Netser_ordering.type_order ast in
     print_type order

@@ -11,9 +11,10 @@
         else if x < 65536 then Prim PRIM_UINT16
         else Prim PRIM_INT
     let simplify_typexpr = function
-    | h::[] -> Ast_elem h
+    | Ast_elem h :: [] -> Ast_elem h
+    | Ast_pound (t, e) :: [] -> Ast_pound (t, e)
     | [] -> Ast_product []
-    | (h::t) as l -> Ast_product (List.map (fun x -> Ast_elem x) l)
+    | (h::t) as l -> Ast_product l
 %}
 
 %token EOF TYPE EQUAL POUND COLON PIPE RPAREN LPAREN LBRACK RBRACK LCURL RCURL
@@ -28,14 +29,13 @@
 
 parse_sexpr: ast* EOF { $1 }
 ast:
-    | TYPE IDENT EQUAL LCURL expr RCURL { ($2, $5) }
-
-te: typexpr* { simplify_typexpr $1 }
+    | TYPE IDENT EQUAL expr { ($2, $4) }
 
 expr:
-    | te { $1 }
-    | te PIPE expr { Ast_sum ($1::[$3]) }
-    | type_kind POUND LPAREN expr RPAREN { Ast_pound ($1, $4) }
+    | typexpr { Ast_elem $1 }
+    | LCURL expr* RCURL { simplify_typexpr $2 }
+    | LPAREN g = separated_list(PIPE, expr) RPAREN { Ast_sum g }
+    | type_kind POUND expr { Ast_pound ($1, $3) }
 
 type_kind: IDENT { Identifier $1} | PRIM { Prim $1 }
 index: IDENT { Count_ident $1 } | NUM { Count_literal $1 }
