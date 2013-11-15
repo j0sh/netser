@@ -51,6 +51,7 @@ let id2type s = s^"_t"
 
 let ident_type = function
     | (None, _, _) -> raise (Failure "Empty ident; fixup?")
+    | (_, Prim PRIM_CHAR, a) when (Count_literal 1) <> a -> "string"
     | (_, Prim p, Count_literal 1) -> prim2type p
     | (_, Prim p, _) -> (prim2type p) ^ " list"
     | (_, Identifier s, Count_literal 1) -> id2type s
@@ -135,6 +136,9 @@ let write_literal lit typ =
     Printf.sprintf "%s b %s" writer_str value
 
 let write_ident name typ count =
+    if (Prim PRIM_CHAR) = typ && (Count_literal 1) <> count then
+        Printf.sprintf "Netser_io.write_string b %s" name
+    else
     let writer_str = type_writer typ in
     match count with
     | Count_literal 1 -> Printf.sprintf "%s b %s" writer_str name
