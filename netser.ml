@@ -4,9 +4,11 @@ let p_t = function
     | Prim p -> prim2str p
     | Identifier s -> s
 
+let p_l = function
+    | Ast_int_literal i -> string_of_int i
+    | Ast_char_literal c -> Printf.sprintf "'%s'" (Char.escaped c)
+
 let print_elem e =
-    let p_l = function
-        | Ast_int_literal i -> string_of_int i in
     let p_c = function
         | Count_literal i when i = 1 -> ""
         | Count_literal i -> Printf.sprintf "[%d]" i
@@ -130,8 +132,7 @@ let type_writer = function
     | Identifier s -> id_writer s
 
 let write_literal lit typ =
-    let (Ast_int_literal i) = lit in
-    let value = string_of_int i in
+    let value = p_l lit in
     let writer_str = type_writer typ in
     Printf.sprintf "%s b %s" writer_str value
 

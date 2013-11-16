@@ -19,6 +19,7 @@
 
 %token EOF TYPE EQUAL POUND COLON PIPE RPAREN LPAREN LBRACK RBRACK LCURL RCURL
 %token <int> NUM
+%token <char> CHAR
 %token <string> IDENT
 %token <Netser_types.prim_t> PRIM
 
@@ -46,4 +47,5 @@ typexpr:
     | type_kind LBRACK index RBRACK { Ast_ident (None, $1, $3) }
     | type_kind LBRACK index RBRACK COLON IDENT { Ast_ident (Some $6, $1, $3) }
     | NUM { mkliteral $1 (infer_type $1) }
+    | CHAR { Ast_literal ((Ast_char_literal $1), (Prim PRIM_CHAR)) }
     | type_kind { mkident None $1 }

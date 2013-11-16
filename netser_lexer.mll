@@ -10,6 +10,7 @@ let blank = [' ' '\t']
 let newline = '\r'? '\n'
 let numeric = digit+
 let ident = lower (lower | upper | digit | '_')*
+let schar = "'" [' '-'~'] "'"
 
 rule tokens = parse
     | '('           { LPAREN }
@@ -25,6 +26,7 @@ rule tokens = parse
     | "type"        { TYPE }
     | "uint8" | "int32" | "uint16" | "int" | "float" | "char"
         as typ { PRIM (str2prim typ) }
+    | schar         { CHAR (Lexing.lexeme_char lexbuf 1) }
     | ident as s    { IDENT s }
     | numeric as n  { NUM (int_of_string n) }
     | blank+        { tokens lexbuf }
