@@ -27,8 +27,12 @@ rule tokens = parse
     | "uint8" | "int32" | "uint16" | "int" | "float" | "char"
         as typ { PRIM (str2prim typ) }
     | schar         { CHAR (Lexing.lexeme_char lexbuf 1) }
+    | '"'           { STRING (string (Buffer.create 200) lexbuf) }
     | ident as s    { IDENT s }
     | numeric as n  { NUM (int_of_string n) }
     | blank+        { tokens lexbuf }
     | newline       { Lexing.new_line lexbuf; tokens lexbuf }
     | eof           { EOF }
+and string buf = parse
+    | '"'           { Buffer.contents buf }
+    | _ as c        { Buffer.add_char buf c; string buf lexbuf }

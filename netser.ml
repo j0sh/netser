@@ -7,6 +7,7 @@ let p_t = function
 let p_l = function
     | Ast_int_literal i -> string_of_int i
     | Ast_char_literal c -> Printf.sprintf "'%s'" (Char.escaped c)
+    | Ast_str_literal s -> Printf.sprintf "\"%s\"" (String.escaped s)
 
 let print_elem e =
     let p_c = function
@@ -48,6 +49,7 @@ let prim2type = function
     | PRIM_INT32 -> "int32"
     | PRIM_FLOAT -> "float"
     | PRIM_CHAR -> "char"
+    | PRIM_STRING -> "string"
 
 let id2type s = s^"_t"
 
@@ -124,6 +126,7 @@ let prim_writer = function
     | PRIM_INT32 -> "Netser_io.write_i32"
     | PRIM_CHAR -> "Netser_io.write_char"
     | PRIM_FLOAT -> "Netser_io.write_float"
+    | PRIM_STRING -> "Netser_io.write_string"
 
 let id_writer s = s^"_writer"
 
@@ -171,6 +174,7 @@ and write_pound name typ p =
     let calc_den = function
     | Identifier i -> raise (Failure (Printf.sprintf "Can't have ident %s as pound-type" i))
     | Prim PRIM_FLOAT -> raise (Failure "Can't have float as pound-type")
+    | Prim PRIM_STRING -> raise (Failure "String pound-type unsupported")
     | Prim PRIM_UINT8 | Prim PRIM_CHAR -> 1
     | Prim PRIM_UINT16 -> 2
     | Prim PRIM_INT | Prim PRIM_INT32 -> 4 in
