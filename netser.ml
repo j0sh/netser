@@ -9,13 +9,17 @@ let p_l = function
     | Ast_char_literal c -> Printf.sprintf "'%s'" (Char.escaped c)
     | Ast_str_literal s -> Printf.sprintf "\"%s\"" (String.escaped s)
 
+let p_l_t t = function
+    | Ast_int_literal i as l when t = (Prim PRIM_INT32) -> (p_l l)^"l"
+    | lit -> p_l lit
+
 let print_elem e =
     let p_c = function
         | Count_literal i when i = 1 -> ""
         | Count_literal i -> Printf.sprintf "[%d]" i
         | Count_ident s -> Printf.sprintf "[%s]" s in
     match e with
-        | Ast_literal (v, t) -> Printf.sprintf "%s:%s" (p_t t) (p_l v)
+        | Ast_literal (v, t) -> Printf.sprintf "%s:%s" (p_t t) (p_l_t t v)
         | Ast_ident (Some s, t, c) -> Printf.sprintf "%s%s:%s" (p_t t) (p_c c) s
         | Ast_ident (None, t, c) -> Printf.sprintf "%s%s" (p_t t) (p_c c)
 
@@ -135,7 +139,7 @@ let type_writer = function
     | Identifier s -> id_writer s
 
 let write_literal lit typ =
-    let value = p_l lit in
+    let value = p_l_t typ lit in
     let writer_str = type_writer typ in
     Printf.sprintf "%s b %s" writer_str value
 
