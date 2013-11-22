@@ -178,18 +178,10 @@ and write_sum name s =
     Printf.sprintf "(%s)" str
 
 and write_pound name typ p =
-    let calc_den = function
-    | Identifier i -> raise (Failure (Printf.sprintf "Can't have ident %s as pound-type" i))
-    | Prim PRIM_FLOAT -> raise (Failure "Can't have float as pound-type")
-    | Prim PRIM_STRING -> raise (Failure "String pound-type unsupported")
-    | Prim PRIM_UINT8 | Prim PRIM_CHAR -> 1
-    | Prim PRIM_UINT16 -> 2
-    | Prim PRIM_INT | Prim PRIM_INT32 -> 4 in
     let str = "let contents =\nlet b = Netser_io.create () in\n" in
     let str = str ^ (data_writer name p) in
     let str = str ^ ";\nNetser_io.contents b in\n" in
-    let len = Printf.sprintf "(int_of_float (ceil (float_of_int (String.length contents)/.%d.0)))" (calc_den typ) in
-    Printf.sprintf "%s%s b %s;\nNetser_io.write_string b contents" str (type_writer typ) len
+    Printf.sprintf "%s%s b (String.length contents);\nNetser_io.write_string b contents" str (type_writer typ)
 
 let signature name written is_recursive =
     let t = id2type name in
