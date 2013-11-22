@@ -113,7 +113,9 @@ let elem_decon = function
 let rec deconstruct_data = function
     | Ast_elem e -> elem_decon e
     | Ast_product p -> prod_decon p
-    | _ -> ""
+    | Ast_pound (_, e) -> deconstruct_data e
+    | Ast_sum _ -> ""
+
 and prod_decon p =
     let data = List.map deconstruct_data p in
     let ne = nonempty data in
