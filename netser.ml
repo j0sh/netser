@@ -24,10 +24,11 @@ let print_elem e =
         | Ast_ident (None, t, c) -> Printf.sprintf "%s%s" (p_t t) (p_c c)
 
 let ast2sexp = function (name, ast_tree) ->
+    let p = Printf.sprintf "(%s)" in
     let rec inner = function
     | Ast_elem s -> print_elem s
-    | Ast_product l -> Printf.sprintf "(%s)" (String.concat " " (List.map inner l))
-    | Ast_sum l -> String.concat " | " (List.map inner l)
+    | Ast_product l -> p (String.concat " " (List.map inner l))
+    | Ast_sum l -> p (String.concat " | " (List.map inner l))
     | Ast_pound (t, e) -> Printf.sprintf "%s#(%s)" (p_t t) (inner e) in
     Printf.sprintf "(%s %s)" name (inner ast_tree)
 
