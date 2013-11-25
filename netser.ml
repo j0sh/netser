@@ -240,8 +240,13 @@ let count_str = function
 
 let read_ident name typ count =
     if (Prim PRIM_CHAR = typ && Count_literal 1 <> count ) then
-    Printf.sprintf "let %s = %s b %s" name (prim_reader PRIM_STRING) (count_str count) else
-    Printf.sprintf "let %s = %s b" name (type_reader typ)
+    Printf.sprintf "let %s = %s b %s" name (prim_reader PRIM_STRING) (count_str count) else if Count_literal 1 = count then
+    Printf.sprintf "let %s = %s b" name (type_reader typ) else
+    Printf.sprintf "let acc = ref [] in
+for i = 0 to %s do
+    acc := (%s b) :: !acc
+done;
+let %s = !acc" (count_str count) (type_reader typ) name
 
 let read_literal lit typ =
     let len = if Prim PRIM_STRING = typ then
