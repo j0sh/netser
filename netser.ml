@@ -219,6 +219,104 @@ let print_exns types =
     exception Sum_match of universal_type
     exception Invalid_read"
 
+let prim_reader = function
+    | PRIM_UINT8 -> "Netser_io_reader.read_u8"
+    | PRIM_UINT16 -> "Netser_io_reader.read_u16"
+    | PRIM_INT32 -> "Netser_io_reader.read_int32"
+    | PRIM_INT -> "Netser_io_reader.read_int"
+    | PRIM_FLOAT -> "Netser_io_reader.read_float"
+    | PRIM_CHAR -> "Netser_io_reader.read_char"
+    | PRIM_STRING -> "Netser_io_reader.read_string"
+
+let id_reader s = s^"_reader"
+
+let type_reader = function
+    | Prim p -> prim_reader p
+    | Identifier s -> id_reader s
+
+let count_str = function
+    | Count_literal i -> string_of_int i
+    | Count_ident s -> s
+
+let read_ident name typ count =
+    if (Prim PRIM_CHAR = typ && Count_literal 1 <> count ) then
+    Printf.sprintf "let %s = %s b %s" name (prim_reader PRIM_STRING) (count_str count) else
+    Printf.sprintf "let %s = %s b" name (type_reader typ)
+
+let read_literal lit typ =
+    let len = if Prim PRIM_STRING = typ then
+        let p = match lit with Ast_str_literal s -> s
+                | _ -> raise (Failure "String literal, non-string prim") in
+        Printf.sprintf " %d" (String.length p)
+    else "" in
+    Printf.sprintf "let () = if %s <> (%s b%s) then raise Invalid_read" (p_l_t typ lit) (type_reader typ) len
+
+let read_elem name = function
+    | Ast_ident (None, _, _) -> raise (Failure "Empty ident; fixup?")
+    | Ast_ident (Some s, t, c) -> read_ident s t c
+    | Ast_literal (l, t) -> read_literal l t
+
+let rec gen_data_reader name = function
+    | Ast_elem e -> read_elem name e
+    | Ast_product p -> String.concat " in\n" (List.map (gen_data_reader name) p)
+    | Ast_pound (t, e) -> read_pound name t e
+    | Ast_sum s -> read_sum name s
+
+and read_pound name typ exp =
+    Printf.sprintf "let len = %s b in\n%s" (type_reader typ) (gen_data_reader name exp)
+
+and read_sum name exps =
+    let gen_wrap i x =
+        let str = gen_data_reader name x in
+        let d = deconstruct_data x in
+        let trailer = Printf.sprintf "%s%d %s" (upcase name) i d in
+        Printf.sprintf "(fun b -> %s in %s)" str trailer in
+    let name_exn = (upcase (id2type name))^"_exn" in
+    let l = List.mapi gen_wrap exps in
+    let g = Printf.sprintf "let %s_opts = [%s] in\n" name (String.concat ";\n" l) in
+    let h = Printf.sprintf "let res = try
+let pos = Netser_io_reader.pos b in
+let g f = try
+    let h = f b in
+    raise (Sum_match (%s h))
+with Invalid_read -> Netser_io_reader.set_pos b pos in
+List.iter g %s_opts;
+None
+with Sum_match (%s h) -> Some h in
+match res with
+| Some s -> s
+| None -> raise Invalid_read" name_exn name name_exn in
+    g^h
+
+let rec trail n d =
+    let a = deconstruct_data d in
+    if "" = a then
+        match d with
+        | Ast_sum e -> "" (*n*)
+        | Ast_pound (_, e) -> trail n e
+        | _ -> "in "^upcase n
+    else "in "^a
+
+let read_signature name written is_recursive =
+    let prefix = if !written then "" else
+        (let p = "let " ^ (if is_recursive then "rec " else "") in
+        written := true; p) in
+    let w = id_reader name in
+    Printf.sprintf "%s %s b =\n" prefix w
+
+let print_readers types =
+    let write_readers l =
+        let prefix_written = ref false in
+        let is_rec = List.length l > 1 in
+        let read (n, d) =
+            let sig_line = read_signature n prefix_written is_rec in
+            let body = gen_data_reader n d in
+            let trailer = trail n d in
+            Printf.sprintf "%s%s\n%s\n" sig_line body trailer in
+        let strs = List.map read l in
+        String.concat "\nand " strs in
+    String.concat "\n" (List.map write_readers types)
+
 let initialize s =
     let parsetree = parse s in
     let stuff x = fixup_elems x in

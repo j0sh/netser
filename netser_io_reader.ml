@@ -9,6 +9,10 @@ module BE = BigEndian
 
 let create () = { buf = Buffer.create 100; pos = 0; str = "" }
 
+let pos b = b.pos
+
+let set_pos b pos = b.pos <- pos
+
 let append b s = Buffer.add_string b.buf s;
     b.str <- Buffer.contents b.buf
 
