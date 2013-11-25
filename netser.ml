@@ -204,6 +204,21 @@ let print_writers types =
         String.concat "\nand " strs in
     String.concat "\n\n" (List.map write_list types)
 
+let type_list types =
+    let a l = List.fold_left (fun acc (n, d) -> n::acc) [] l in
+    List.fold_left (fun acc l -> acc@(a l)) [] types
+
+let print_exns types =
+    let names = type_list types in
+    let gen_exn s =
+        let idt = id2type s in
+        (upcase idt)^"_exn of "^idt in
+    let exn_strs = List.map gen_exn names in
+    let univ = String.concat " | " exn_strs in
+    "type universal_type = "^univ^"
+    exception Sum_match of universal_type
+    exception Invalid_read"
+
 let initialize s =
     let parsetree = parse s in
     let stuff x = fixup_elems x in
