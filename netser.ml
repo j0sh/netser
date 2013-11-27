@@ -49,6 +49,46 @@ let fixup_elems = function (name, tree) ->
         | Ast_pound (typ, e) -> Ast_pound (typ, elem e) in
     (name, elem tree)
 
+let gensym_counter = ref 0
+let gensym () = incr gensym_counter;
+    Printf.sprintf "sym%d" !gensym_counter
+
+(*
+    types of the form {()} (sums nested inside a product) cause
+    problems for ocaml, so extract nested sums into an intermediate
+    type, eg [a = (); {a}]
+
+    For an example of an invalid/ambiguous nested sum:
+    type t = A0 of int | A1 of int * B0 of int | B1 of int
+
+    This gets converted into the intermediate form
+    type t0 = A0 of int | A1 of int
+    type t1 = B0 of int | B1 of int
+    type t  = t0 * t1
+*)
+let rec extract in_prod (global, accum) = function
+    | (Ast_elem _) as s -> (global, s::accum)
+    | (Ast_pound (t, e)) ->
+        let (global, s) = (extract in_prod (global, []) e) in
+        (global, (Ast_pound (t, (List.hd s))::accum))
+    | Ast_sum l ->
+        let (glob, e) = List.fold_left (extract in_prod) (global, []) l in
+        let er = List.rev e in
+        if in_prod then
+            let n = gensym () in
+            ((n, Ast_sum er)::glob,
+            Ast_elem (Ast_ident (Some (n^"_dep"), Identifier n, Count_literal 1))::accum)
+        else (glob, (Ast_sum er)::accum)
+    | Ast_product l ->
+        let (glob, e) = List.fold_left (extract true) (global, []) l in
+        (glob, (Ast_product (List.rev e))::accum)
+
+let extract_elems l =
+    let extract_elem acc = function (name, elem) ->
+        let (global, inner) = extract false ([], []) elem in
+        ((name, (List.hd inner))::global)::acc in
+    List.flatten (List.fold_left extract_elem [] l)
+
 let prim2type = function
     | PRIM_UINT8 | PRIM_UINT16 | PRIM_INT  -> "int"
     | PRIM_INT32 -> "int32"
@@ -325,8 +365,8 @@ let print_readers types =
 
 let initialize s =
     let parsetree = parse s in
-    let stuff x = fixup_elems x in
-    let ast = List.map stuff parsetree in
+    let ex = extract_elems parsetree in
+    let ast = List.map fixup_elems ex in
     let order = Netser_ordering.type_order ast in
     let s0 = print_type order in
     let s1 = print_writers order in
