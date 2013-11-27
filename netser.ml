@@ -167,13 +167,13 @@ let deconstruct name data =
     if "" <> d then Printf.sprintf "let %s = %s in\n" d name else d
 
 let prim_writer = function
-    | PRIM_UINT8 -> "Netser_io.write_u8"
-    | PRIM_UINT16 -> "Netser_io.write_u16"
-    | PRIM_INT -> "Netser_io.write_int"
-    | PRIM_INT32 -> "Netser_io.write_i32"
-    | PRIM_CHAR -> "Netser_io.write_char"
-    | PRIM_FLOAT -> "Netser_io.write_float"
-    | PRIM_STRING -> "Netser_io.write_string"
+    | PRIM_UINT8 -> "Netser_io_writer.write_u8"
+    | PRIM_UINT16 -> "Netser_io_writer.write_u16"
+    | PRIM_INT -> "Netser_io_writer.write_int"
+    | PRIM_INT32 -> "Netser_io_writer.write_i32"
+    | PRIM_CHAR -> "Netser_io_writer.write_char"
+    | PRIM_FLOAT -> "Netser_io_writer.write_float"
+    | PRIM_STRING -> "Netser_io_writer.write_string"
 
 let id_writer s = s^"_writer"
 
@@ -218,11 +218,11 @@ and write_sum name s =
     Printf.sprintf "(%s)" str
 
 and write_pound name typ p =
-    let str = "let contents =\nlet b = Netser_io.create () in\n" in
+    let str = "let contents =\nlet b = Netser_io_writer.create () in\n" in
     let str = str ^ (data_writer name p) in
-    let str = str ^ ";\nNetser_io.contents b in\n" in
+    let str = str ^ ";\nNetser_io_writer.contents b in\n" in
     let conv = if Prim PRIM_INT32 = typ then "(Int32.of_int (String.length contents))" else "(String.length contents)" in
-    Printf.sprintf "%s%s b %s;\nNetser_io.write_string b contents" str (type_writer typ) conv
+    Printf.sprintf "%s%s b %s;\nNetser_io_writer.write_string b contents" str (type_writer typ) conv
 
 let signature name written is_recursive =
     let t = id2type name in
