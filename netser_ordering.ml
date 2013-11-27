@@ -7,7 +7,8 @@ let rec tree_deps = function
     | Ast_elem (Ast_ident(_, Identifier s, _)) -> [s]
     | Ast_product l -> List.flatten (List.map tree_deps l)
     | Ast_sum l -> List.flatten (List.map tree_deps l)
-    | _ -> []
+    | Ast_pound (_, e) -> tree_deps e
+    | Ast_elem _ -> []
 
 let outgoing_edges s =
     let trees = List.map (fun (_, tree) -> tree) s in
